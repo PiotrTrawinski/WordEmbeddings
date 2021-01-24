@@ -1,3 +1,4 @@
+: gram5-present-participle
 code coding dance dancing
 code coding debug debugging
 code coding decrease decreasing

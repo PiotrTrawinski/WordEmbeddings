@@ -1,113 +1,40 @@
 import os
 import numpy as np
 import re
-from scipy import stats
+from gensim.models import Word2Vec
+from gensim.scripts.glove2word2vec import glove2word2vec
+from gensim.models.keyedvectors import KeyedVectors
 
-def cos_similarity(W_norm, ind1, ind2):
-    return np.dot(W_norm[ind1], W_norm[ind2])
-
-def cos_similarity_words(W_norm, vocab, w1, w2):
-    return cos_similarity(W_norm, vocab[w1], vocab[w2])
-
-def most_similar_k(W, words, vocab, ws, k):
-    ind1 = vocab[ws[0]]
-    ind2 = vocab[ws[1]]
-    ind3 = vocab[ws[2]]
-    pred_vec = W[ind2, :] - W[ind1, :] + W[ind3, :]
-    dist = np.dot(W, pred_vec.T)
-    dist[ind1] = -np.Inf
-    dist[ind2] = -np.Inf
-    dist[ind3] = -np.Inf
-    best_k = (-dist).argsort(axis=0).flatten()[0:k]
-    return [words[d] for d in best_k]
-
-def most_similar(W, words, vocab, ws):
-    return most_similar_k(W, words, vocab, ws, 1)[0]
-
-def user_try_analogy(W, words, vocab):
+def user_try_analogy(model: KeyedVectors):
     regExp = r'\s*(\w*)\s*\-?\s*(\w*)\s*\+?\s*(\w*).*'
     ws = re.match(regExp, input("analogy expression: ")).groups()
-    pred = most_similar(W, words, vocab, ws)
-    print("analogy expression: {} - {} + {} = {}".format(ws[0], ws[1], ws[2], pred))
 
-def user_eval_similarity(W, vocab):
+    print(ws)
+    result = model.most_similar(positive=[ws[0], ws[2]], negative=[ws[1]])
+    preds = []
+    for i in range(3):
+        pred, _ = result[i]
+        preds.append(pred)
+
+    print("analogy expression: {} - {} + {} = [{}, {}, {}]".format(ws[0], ws[1], ws[2], preds[0], preds[1], preds[2]))
+
+def user_eval_similarity(model: KeyedVectors):
     ws = input("two words to compare for similarity seperated by space: ").split()
-    print("cosine similarity = {}".format(cos_similarity_words(W, vocab, ws[0], ws[1])))
+    similarity = model.similarity(ws[0], ws[1])
+    print("cosine similarity = {}".format(similarity))
 
+def test_similarity(model: KeyedVectors):
+    dataset_names = ['wordsim_relatedness', 'wordsim_similarity', 'MEN', 'SimVerb-3500']
 
-def test_single_similarity(W, vocab, dataset):
-    scores = []
-    calculated = []
-    for data in dataset:
-        word_1 = data[0]
-        word_2 = data[1]
-        score = data[2]
-        scores.append(score)
-        calculated.append(cos_similarity_words(W, vocab, word_1, word_2))
-    return stats.spearmanr(scores, calculated).correlation
-
-def test_similarity(W, vocab, datasets):
     dataset_results = {}
-    for dataset_name, dataset in datasets.items():
-        print("testing similarity on dataset '{}'".format(dataset_name))
-        data = [x for x in dataset if (x[0] in vocab and x[1] in vocab)]
-        dataset_results[dataset_name] = test_single_similarity(W, vocab, data)
+    for name in dataset_names:
+        print("testing similarity on dataset '{}'".format(name))
+        pearson, spearman, oov = model.evaluate_word_pairs('datasets/similarity/{}.txt'.format(name))
+        dataset_results[name] = spearman[0]
+
     return dataset_results
 
-def test_single_analogy(W, words, vocab, dataset):
-    indices = np.array([[vocab[word] for word in data] for data in dataset])
-    ind1, ind2, ind3, ind4 = indices.T
-
-    predictions = np.zeros((len(indices),))
-    split_size = 1000
-    num_iter = int(np.ceil(len(indices) / float(split_size)))
-    for j in range(num_iter):
-        subset = np.arange(j*split_size, min((j + 1)*split_size, len(ind1)))
-
-        pred_vec = (W[ind2[subset], :] - W[ind1[subset], :] +  W[ind3[subset], :])
-        dist = np.dot(W, pred_vec.T)
-        for k in range(len(subset)):
-            dist[ind1[subset[k]], k] = -np.Inf
-            dist[ind2[subset[k]], k] = -np.Inf
-            dist[ind3[subset[k]], k] = -np.Inf
-
-        predictions[subset] = np.argmax(dist, 0).flatten()
-
-    val = (ind4 == predictions)
-    return sum(val)
-
-def test_analogy(W, words, vocab, datasets):
-    correct_count = 0
-    total_count = 0
-    dataset_results = {}
-
-    for dataset_name, dataset in datasets.items():
-        print("testing analogy on dataset '{}'".format(dataset_name))
-        data = [x for x in dataset if all(word in vocab for word in x)]
-        count = test_single_analogy(W, words, vocab, data)
-        correct_count += count
-        total_count += len(data)
-        dataset_results[dataset_name] = count / len(data)
-
-    return (correct_count / total_count, dataset_results)
-
-def load_datasets(base_dir, dataset_names):
-    datasets = {}
-    for name in dataset_names:
-        with open(base_dir + name + '.txt') as f:
-            datasets[name] = [line.rstrip().split() for line in f]
-    return datasets
-
-def load_similarity_datasets():
-    base_dir = 'datasets/similarity/'
-    dataset_names = ['SimVerb-3500', 'wordsim_relatedness', 'wordsim_similarity', 'MEN']
-    datasets = load_datasets(base_dir, dataset_names)
-    for name, dataset in datasets.items():
-        datasets[name] = [[x[0], x[1], float(x[2])] for x in dataset]
-    return datasets
-
-def load_analogy_datasets():
-    base_dir = 'datasets/analogy/'
+def test_analogy(model: KeyedVectors):
     dataset_names = [
         'capital-common-countries', 'capital-world', 'currency',
         'city-in-state', 'family', 'gram1-adjective-to-adverb',
@@ -115,14 +42,22 @@ def load_analogy_datasets():
         'gram5-present-participle', 'gram6-nationality-adjective',
         'gram7-past-tense', 'gram8-plural', 'gram9-plural-verbs',
     ]
-    return load_datasets(base_dir, dataset_names)
 
-def run_all_tests(W, words, vocab):
-    similarity_datasets = load_similarity_datasets()
-    analogy_datasets = load_analogy_datasets()
+    correct_count = 0
+    total_count = 0
+    dataset_results = {}
+    for name in dataset_names:
+        print("testing analogy on dataset '{}'".format(name))
+        score, sections = model.evaluate_word_analogies('datasets/analogy/{}.txt'.format(name))
+        correct_count += len(sections[0]['correct'])
+        total_count += len(sections[0]['correct']) + len(sections[0]['incorrect'])
+        dataset_results[name] = score
 
-    similarity_results = test_similarity(W, vocab, similarity_datasets)
-    analogy_results = test_analogy(W, words, vocab, analogy_datasets)
+    return (correct_count / total_count, dataset_results)
+
+def run_all_tests(model: KeyedVectors):
+    similarity_results = test_similarity(model)
+    analogy_results = test_analogy(model)
 
     print()
     print("Similarity results:")
@@ -140,50 +75,41 @@ def run_all_tests(W, words, vocab):
     print('total = '+('%.2f' % (analogy_total * 100))+'%')
     print()
 
+def get_new_model():
+    model_names = ['word2vec', 'glove']
+    model = None
+    while model == None:
+        chosen_model = input('choose one of ' + str(model_names) + ': ')
+        if chosen_model in model_names:
+            print("loading model...")
+        if chosen_model == 'word2vec':
+            pass # TODO: get pretrained word2vec model
+        elif chosen_model == 'glove':
+            vectors_file = 'glove_text8_vectors.txt'
+            glove2word2vec(glove_input_file=vectors_file, word2vec_output_file="gensim_glove_vectors.txt")
+            model = KeyedVectors.load_word2vec_format("gensim_glove_vectors.txt", binary=False)
+        else:
+            print('unrecognized model name. choose again')
+    return model
+
 def main():
-    print('loading vector...')
-    vectors_file = 'glove_text8_vectors.txt'
-
-    # read words vector
-    words = []
-    vectors = {}
-    with open(vectors_file, 'r') as f:
-        vectors = {}
-        for line in f:
-            vals = line.rstrip().split(' ')
-            if vals[0] != '<unk>':
-                words.append(vals[0])
-            vectors[vals[0]] = [float(x) for x in vals[1:]]
-
-    vocab = {w: idx for idx, w in enumerate(words)}
-    ivocab = {idx: w for idx, w in enumerate(words)}
-    vector_dim = len(vectors[ivocab[0]])
-    W = np.zeros((len(words), vector_dim))
-    for word, v in vectors.items():
-        if word == '<unk>':
-            continue
-        W[vocab[word], :] = v
-
-    # normalize
-    W_norm = np.zeros(W.shape)
-    d = (np.sum(W ** 2, 1) ** (0.5))
-    W_norm = (W.T / d).T
-
+    model = get_new_model()
     while True:
+        print("0. load model")
         print("1. run analogy and similarity tests")
         print("2. interactive similarity testing")
         print("3. interactive analogy testing")
         print("4. exit")
-        option = int(input("choose option (1-4): "))
-        if option == 1:
-            run_all_tests(W_norm, words, vocab)
-        elif option == 2:
-            user_eval_similarity(W_norm, vocab)
-        elif option == 3:
-            print("input analogy in the form like for example 'king - queen + men'")
-            user_try_analogy(W_norm, words, vocab)
-        else:
-            break
+        option = input("choose option (1-4): ")
+        if option == '0':
+            model = get_new_model()
+        elif option == '1':
+            run_all_tests(model)
+        elif option == '2':
+            user_eval_similarity(model)
+        elif option == '3':
+            print("input analogy in the form like for example 'king - man + woman'")
+            user_try_analogy(model)
         print()
 
 if __name__ == "__main__":

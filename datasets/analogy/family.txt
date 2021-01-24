@@ -1,3 +1,4 @@
+: family
 boy girl brother sister
 boy girl brothers sisters
 boy girl dad mom

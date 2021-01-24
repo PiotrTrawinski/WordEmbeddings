@@ -1,3 +1,4 @@
+: gram7-past-tense
 dancing danced decreasing decreased
 dancing danced describing described
 dancing danced enhancing enhanced

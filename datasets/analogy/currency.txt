@@ -1,3 +1,4 @@
+: currency
 algeria dinar angola kwanza
 algeria dinar argentina peso
 algeria dinar armenia dram

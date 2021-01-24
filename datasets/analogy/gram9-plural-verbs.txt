@@ -1,3 +1,4 @@
+: gram9-plural-verbs
 decrease decreases describe describes
 decrease decreases eat eats
 decrease decreases enhance enhances

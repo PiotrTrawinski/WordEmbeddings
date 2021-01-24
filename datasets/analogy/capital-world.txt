@@ -1,3 +1,4 @@
+: capital-world
 abuja nigeria accra ghana
 abuja nigeria algiers algeria
 abuja nigeria amman jordan

@@ -1,3 +1,4 @@
+: gram1-adjective-to-adverb
 amazing amazingly apparent apparently
 amazing amazingly calm calmly
 amazing amazingly cheerful cheerfully

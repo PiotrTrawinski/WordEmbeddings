@@ -1,3 +1,4 @@
+: city-in-state
 chicago illinois houston texas
 chicago illinois philadelphia pennsylvania
 chicago illinois phoenix arizona
