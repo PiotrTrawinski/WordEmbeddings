@@ -11,7 +11,6 @@ def user_try_analogy(model: KeyedVectors):
     regExp = r'\s*(\w*)\s*\-?\s*(\w*)\s*\+?\s*(\w*).*'
     ws = re.match(regExp, input("analogy expression: ")).groups()
 
-    print(ws)
     result = model.most_similar(positive=[ws[0], ws[2]], negative=[ws[1]])
     preds = []
     for i in range(3):
