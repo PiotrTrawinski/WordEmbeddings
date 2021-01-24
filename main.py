@@ -4,6 +4,7 @@ import re
 from gensim.models import Word2Vec
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.models.keyedvectors import KeyedVectors
+from gensim.models import fasttext
 
 def user_try_analogy(model: KeyedVectors):
     regExp = r'\s*(\w*)\s*\-?\s*(\w*)\s*\+?\s*(\w*).*'
@@ -76,7 +77,7 @@ def run_all_tests(model: KeyedVectors):
     print()
 
 def get_new_model():
-    model_names = ['word2vec', 'glove']
+    model_names = ['word2vec', 'glove', 'fasttext']
     model = None
     while model == None:
         chosen_model = input('choose one of ' + str(model_names) + ': ')
@@ -85,9 +86,12 @@ def get_new_model():
         if chosen_model == 'word2vec':
             pass # TODO: get pretrained word2vec model
         elif chosen_model == 'glove':
-            vectors_file = 'glove_text8_vectors.txt'
+            vectors_file = 'glove_simplewiki.txt'
             glove2word2vec(glove_input_file=vectors_file, word2vec_output_file="gensim_glove_vectors.txt")
             model = KeyedVectors.load_word2vec_format("gensim_glove_vectors.txt", binary=False)
+        elif chosen_model == 'fasttext':
+            vectors_file = 'fasttext_simplewiki.bin'
+            model = fasttext.load_facebook_model(vectors_file).wv
         else:
             print('unrecognized model name. choose again')
     return model
