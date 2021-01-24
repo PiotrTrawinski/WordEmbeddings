@@ -85,13 +85,14 @@ def get_new_model():
         if chosen_model in model_names:
             print("loading model...")
         if chosen_model == 'word2vec':
-            model = Word2Vec.load('datasets/word2vec.model'), mmap='r')
+            model = Word2Vec.load('models/word2vec.model', mmap='r').wv
         elif chosen_model == 'glove':
-            vectors_file = 'glove_simplewiki.txt'
-            glove2word2vec(glove_input_file=vectors_file, word2vec_output_file="gensim_glove_vectors.txt")
-            model = KeyedVectors.load_word2vec_format("gensim_glove_vectors.txt", binary=False)
+            vectors_file = 'models/glove_simplewiki.txt'
+            tmp_file = "models/gensim_glove_vectors.txt"
+            glove2word2vec(glove_input_file=vectors_file, word2vec_output_file=tmp_file)
+            model = KeyedVectors.load_word2vec_format(tmp_file, binary=False)
         elif chosen_model == 'fasttext':
-            vectors_file = 'fasttext_simplewiki.bin'
+            vectors_file = 'models/fasttext_simplewiki.bin'
             model = fasttext.load_facebook_model(vectors_file).wv
         else:
             print('unrecognized model name. choose again')
