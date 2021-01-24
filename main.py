@@ -115,6 +115,8 @@ def main():
         elif option == '3':
             print("input analogy in the form like for example 'king - man + woman'")
             user_try_analogy(model)
+        else:
+            break
         print()
 
 if __name__ == "__main__":
