@@ -4,6 +4,7 @@ import re
 from gensim.models import Word2Vec
 from gensim.scripts.glove2word2vec import glove2word2vec
 from gensim.models.keyedvectors import KeyedVectors
+from gensim.models.word2vec import Word2Vec
 
 def user_try_analogy(model: KeyedVectors):
     regExp = r'\s*(\w*)\s*\-?\s*(\w*)\s*\+?\s*(\w*).*'
@@ -83,7 +84,7 @@ def get_new_model():
         if chosen_model in model_names:
             print("loading model...")
         if chosen_model == 'word2vec':
-            pass # TODO: get pretrained word2vec model
+            model = Word2Vec.load('datasets/word2vec.model'), mmap='r')
         elif chosen_model == 'glove':
             vectors_file = 'glove_text8_vectors.txt'
             glove2word2vec(glove_input_file=vectors_file, word2vec_output_file="gensim_glove_vectors.txt")
