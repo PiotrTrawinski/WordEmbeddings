@@ -35,7 +35,20 @@ def test_similarity(model: KeyedVectors):
 
     return dataset_results
 
-def test_analogy(model: KeyedVectors):
+def test_analogy(model: KeyedVectors, dir_name, dataset_names):
+    correct_count = 0
+    total_count = 0
+    dataset_results = {}
+    for name in dataset_names:
+        print("testing analogy on dataset '{}'".format(name))
+        score, sections = model.evaluate_word_analogies('datasets/analogy/{}/{}.txt'.format(dir_name, name))
+        correct_count += len(sections[0]['correct'])
+        total_count += len(sections[0]['correct']) + len(sections[0]['incorrect'])
+        dataset_results[name] = score
+
+    return (correct_count / total_count, dataset_results)
+
+def test_analogy_google(model: KeyedVectors):
     dataset_names = [
         'capital-common-countries', 'capital-world', 'currency',
         'city-in-state', 'family', 'gram1-adjective-to-adverb',
@@ -43,22 +56,15 @@ def test_analogy(model: KeyedVectors):
         'gram5-present-participle', 'gram6-nationality-adjective',
         'gram7-past-tense', 'gram8-plural', 'gram9-plural-verbs',
     ]
+    return test_analogy(model, 'google', dataset_names)
 
-    correct_count = 0
-    total_count = 0
-    dataset_results = {}
-    for name in dataset_names:
-        print("testing analogy on dataset '{}'".format(name))
-        score, sections = model.evaluate_word_analogies('datasets/analogy/{}.txt'.format(name))
-        correct_count += len(sections[0]['correct'])
-        total_count += len(sections[0]['correct']) + len(sections[0]['incorrect'])
-        dataset_results[name] = score
-
-    return (correct_count / total_count, dataset_results)
+def test_analogy_msr(model: KeyedVectors):
+    return test_analogy(model, 'MSR', ['MSR'])
 
 def run_all_tests(model: KeyedVectors):
     similarity_results = test_similarity(model)
-    analogy_results = test_analogy(model)
+    google_analogy_results = test_analogy_google(model)
+    msr_analogy_results = test_analogy_msr(model)
 
     print()
     print("Similarity results:")
@@ -70,10 +76,12 @@ def run_all_tests(model: KeyedVectors):
     print("Analogy results:")
     print("\t{:<30} {:<10}".format('Dataset','guess accuracy'))
     print("\t-------------------------------------------------")
-    analogy_total, analogy_per_dataset = analogy_results
+    analogy_total, analogy_per_dataset = google_analogy_results
     for dataset_name, result in analogy_per_dataset.items():
-        print("\t{:<30} {:<10}".format(dataset_name, ('%.2f' % (result * 100))+'%'))
-    print('total = '+('%.2f' % (analogy_total * 100))+'%')
+        print("\t{:<30} {:<10}".format('google-'+dataset_name, ('%.2f' % (result * 100))+'%'))
+    print("\t{:<30} {:<10}".format('google total', ('%.2f' % (analogy_total * 100))+'%'))
+    analogy_total, _ = msr_analogy_results
+    print("\t{:<30} {:<10}".format('MSR', ('%.2f' % (analogy_total * 100))+'%'))
     print()
 
 def get_new_model():
@@ -105,7 +113,7 @@ def main():
         print("2. interactive similarity testing")
         print("3. interactive analogy testing")
         print("4. exit")
-        option = input("choose option (1-4): ")
+        option = input("choose option (0-4): ")
         if option == '0':
             model = get_new_model()
         elif option == '1':
