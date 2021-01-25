@@ -68,24 +68,24 @@ def run_all_tests(model: KeyedVectors):
 
     print()
     print("Similarity results:")
-    print("\t{:<30} {:<10}".format('Dataset','Spearman correlation'))
-    print("\t-------------------------------------------------")
+    print("\t{:<40} {:<10}".format('Dataset','Spearman correlation'))
+    print("\t-----------------------------------------------------------")
     for dataset_name, result in similarity_results.items():
-        print("\t{:<30} {:<10}".format(dataset_name, '%.5f' % result))
+        print("\t{:<40} {:<10}".format(dataset_name, '%.5f' % result))
     print()
     print("Analogy results:")
-    print("\t{:<30} {:<10}".format('Dataset','guess accuracy'))
-    print("\t-------------------------------------------------")
+    print("\t{:<40} {:<10}".format('Dataset','guess accuracy'))
+    print("\t-----------------------------------------------------------")
     analogy_total, analogy_per_dataset = google_analogy_results
     for dataset_name, result in analogy_per_dataset.items():
-        print("\t{:<30} {:<10}".format('google-'+dataset_name, ('%.2f' % (result * 100))+'%'))
-    print("\t{:<30} {:<10}".format('google total', ('%.2f' % (analogy_total * 100))+'%'))
+        print("\t{:<40} {:<10}".format('google-'+dataset_name, ('%.2f' % (result * 100))+'%'))
+    print("\t{:<40} {:<10}".format('google total', ('%.2f' % (analogy_total * 100))+'%'))
     analogy_total, _ = msr_analogy_results
-    print("\t{:<30} {:<10}".format('MSR', ('%.2f' % (analogy_total * 100))+'%'))
+    print("\t{:<40} {:<10}".format('MSR', ('%.2f' % (analogy_total * 100))+'%'))
     print()
 
 def get_new_model():
-    model_names = ['word2vec', 'glove', 'fasttext']
+    model_names = ['word2vec', 'glove', 'fasttext-skipgram', 'fasttext-cbow', 'en-glove', 'en-fasttext-skipgram', 'en-fasttext-cbow']
     model = None
     while model == None:
         chosen_model = input('choose one of ' + str(model_names) + ': ')
@@ -94,13 +94,23 @@ def get_new_model():
         if chosen_model == 'word2vec':
             model = Word2Vec.load('models/word2vec.model', mmap='r').wv
         elif chosen_model == 'glove':
-            vectors_file = 'models/glove_simplewiki.txt'
+            vectors_file = 'models/simplewiki_glove.txt'
             tmp_file = "models/gensim_glove_vectors.txt"
             glove2word2vec(glove_input_file=vectors_file, word2vec_output_file=tmp_file)
             model = KeyedVectors.load_word2vec_format(tmp_file, binary=False)
-        elif chosen_model == 'fasttext':
-            vectors_file = 'models/fasttext_simplewiki.bin'
-            model = fasttext.load_facebook_model(vectors_file).wv
+        elif chosen_model == 'en-glove':
+            vectors_file = 'models/enwiki_glove.txt'
+            tmp_file = "models/gensim_glove_vectors.txt"
+            glove2word2vec(glove_input_file=vectors_file, word2vec_output_file=tmp_file)
+            model = KeyedVectors.load_word2vec_format(tmp_file, binary=False)
+        elif chosen_model == 'fasttext-skipgram':
+            model = fasttext.load_facebook_model('models/simplewiki_fasttext_skipgram.bin').wv
+        elif chosen_model == 'fasttext-cbow':
+            model = fasttext.load_facebook_model('models/simplewiki_fasttext_cbow.bin').wv
+        elif chosen_model == 'en-fasttext-skipgram':
+            model = fasttext.load_facebook_model('models/enwiki_fasttext_skipgram.bin').wv
+        elif chosen_model == 'en-fasttext-cbow':
+            model = fasttext.load_facebook_model('models/enwiki_fasttext_cbow.bin').wv
         else:
             print('unrecognized model name. choose again')
     return model
