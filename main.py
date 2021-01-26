@@ -85,14 +85,16 @@ def run_all_tests(model: KeyedVectors):
     print()
 
 def get_new_model():
-    model_names = ['word2vec', 'glove', 'fasttext-skipgram', 'fasttext-cbow', 'en-glove', 'en-fasttext-skipgram', 'en-fasttext-cbow']
+    model_names = ['word2vec-skipgram', 'word2vec-cbow', 'glove', 'fasttext-skipgram', 'fasttext-cbow', 'en-glove', 'en-fasttext-skipgram', 'en-fasttext-cbow']
     model = None
     while model == None:
         chosen_model = input('choose one of ' + str(model_names) + ': ')
         if chosen_model in model_names:
             print("loading model...")
-        if chosen_model == 'word2vec':
-            model = Word2Vec.load('models/word2vec.model', mmap='r').wv
+        if chosen_model == 'word2vec-skipgram':
+            model = Word2Vec.load('models/word2vec-skipgram/word2vec.model', mmap='r').wv
+        elif chosen_model == 'word2vec-cbow':
+            model = Word2Vec.load('models/word2vec-cbow/word2vec.model', mmap='r').wv
         elif chosen_model == 'glove':
             vectors_file = 'models/simplewiki_glove.txt'
             tmp_file = "models/gensim_glove_vectors.txt"
